@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -98,6 +99,44 @@ namespace WtPUpdater
                 fileName);
            
 
+        }
+
+        private string installDir = "";
+        private void FindCivButton_Click(object sender, EventArgs e)
+        {
+            installDir = "";
+           var uninst =  Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
+           foreach (var subkeyname in uninst.GetSubKeyNames())
+            {
+                var subkey = uninst.OpenSubKey(subkeyname);
+                if (subkey?.GetValue("DisplayName")?.ToString() != "Sid Meier's Civilization IV: Colonization1") continue;
+               installDir = subkey.GetValue("InstallLocation").ToString();
+            }
+           if (string.IsNullOrEmpty(installDir))
+            {
+                if (MessageBox.Show("Civilization IV: Colonization install dir not found, do you like to select it manually?", "Find directory", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                {
+                    var fod = new OpenFileDialog() { Filter = "Colonization.exe|Colonization.exe" };
+                    if (fod.ShowDialog() == DialogResult.OK && File.Exists(fod.FileName))
+                    {
+                        installDir = Path.GetDirectoryName(fod.FileName);
+                    }
+                }
+                else
+                {
+                    var mgp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Personal), "My Games", "Civilization IV Colonization");
+                    if (Directory.Exists(mgp))
+                    {
+                        if (MessageBox.Show($"Do you want to use {mgp}?") == DialogResult.OK) installDir = mgp;
+                    }
+                }
+            }
+           if (!string.IsNullOrEmpty(installDir)&&Directory.Exists(installDir))
+            {
+                installDir = Path.Combine(installDir, "Mods");
+                AddLog($"Installation dir: {installDir}");
+            } 
+              
         }
     }
 }

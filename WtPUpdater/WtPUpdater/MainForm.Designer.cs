@@ -33,6 +33,7 @@
             this.VersionList = new System.Windows.Forms.ListBox();
             this.SaveButton = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.FindCivButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // RefreshButton
@@ -75,16 +76,27 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(176, 13);
+            this.progressBar.Location = new System.Drawing.Point(256, 13);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(623, 23);
+            this.progressBar.Size = new System.Drawing.Size(543, 23);
             this.progressBar.TabIndex = 4;
+            // 
+            // FindCivButton
+            // 
+            this.FindCivButton.Location = new System.Drawing.Point(175, 14);
+            this.FindCivButton.Name = "FindCivButton";
+            this.FindCivButton.Size = new System.Drawing.Size(75, 23);
+            this.FindCivButton.TabIndex = 5;
+            this.FindCivButton.Text = "FindDir";
+            this.FindCivButton.UseVisualStyleBackColor = true;
+            this.FindCivButton.Click += new System.EventHandler(this.FindCivButton_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(811, 450);
+            this.Controls.Add(this.FindCivButton);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.SaveButton);
             this.Controls.Add(this.VersionList);
@@ -104,6 +116,7 @@
         private System.Windows.Forms.ListBox VersionList;
         private System.Windows.Forms.Button SaveButton;
         private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.Button FindCivButton;
     }
 }
 
