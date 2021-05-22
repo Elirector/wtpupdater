@@ -17,3 +17,5 @@ Parse mod release page on github, find all releases, download chosen one, unpack
 1. Remove temp files
 1. Configuration: last version downloaded, last chosen dir
 1. Error handling and optimization
+1. Need a way to distinguish current version
+1. Remake as wizard with auto/silent option
