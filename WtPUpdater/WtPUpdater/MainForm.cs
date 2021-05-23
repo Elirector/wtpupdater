@@ -102,7 +102,7 @@ namespace WtPUpdater
             }
            if (!string.IsNullOrEmpty(installDir)&&Directory.Exists(installDir))
             {
-                installDir = Path.Combine(installDir, "Mods");
+                installDir = Path.Combine(installDir, "Mods", ModDirName.Text);
                 AddLog($"Installation dir: {installDir}");
               
             } 

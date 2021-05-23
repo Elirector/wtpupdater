@@ -35,6 +35,7 @@
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.FindCivButton = new System.Windows.Forms.Button();
             this.UnzipButton = new System.Windows.Forms.Button();
+            this.ModDirName = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // RefreshButton
@@ -77,9 +78,9 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(337, 13);
+            this.progressBar.Location = new System.Drawing.Point(492, 13);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(462, 23);
+            this.progressBar.Size = new System.Drawing.Size(307, 23);
             this.progressBar.TabIndex = 4;
             // 
             // FindCivButton
@@ -103,11 +104,20 @@
             this.UnzipButton.UseVisualStyleBackColor = true;
             this.UnzipButton.Click += new System.EventHandler(this.UnzipButton_Click);
             // 
+            // ModDirName
+            // 
+            this.ModDirName.Location = new System.Drawing.Point(338, 14);
+            this.ModDirName.Name = "ModDirName";
+            this.ModDirName.Size = new System.Drawing.Size(148, 20);
+            this.ModDirName.TabIndex = 7;
+            this.ModDirName.Text = "WeThePeople";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(811, 450);
+            this.Controls.Add(this.ModDirName);
             this.Controls.Add(this.UnzipButton);
             this.Controls.Add(this.FindCivButton);
             this.Controls.Add(this.progressBar);
@@ -131,6 +141,7 @@
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Button FindCivButton;
         private System.Windows.Forms.Button UnzipButton;
+        private System.Windows.Forms.TextBox ModDirName;
     }
 }
 

@@ -7,6 +7,7 @@ A tool to download and install [We The People mod](https://github.com/We-the-Peo
 1. Select required version (last is selected by default)
 1. Press "Save" to start downlading, press "Cancel" to stop it
 1. Press "FindDir" to find Civ4Col installation dir or select other dir if not found or autoselect %documents%\My Games\Covilization IV Colonization (Install subdir will always be "\Mods\WeThePeople", if exists it will be cleared!)
+1. Change subdir name for mod in a text field if needed
 1. Press "Unzip" when file downlading completed and install dir selected
 
 # What should it do?
