@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -19,6 +20,7 @@ namespace WtPUpdater
         private readonly string GhUri;
         internal DownloadProgressChangedEventHandler DownloadProgressChanged;
         internal AsyncCompletedEventHandler DownloadFileCompleted;
+        internal string WtpZipFile { get; private set; }
 
         internal bool DownloadInProgress { get { return WebClient == null ? true : WebClient.IsBusy; } }
         private void TriggerDownloadProgressChanged(object o, DownloadProgressChangedEventArgs args)
@@ -34,7 +36,7 @@ namespace WtPUpdater
         {
             ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
             AddLog = addLog ?? ((s) => { });
-             WebClient = new WebClient();
+            WebClient = new WebClient();
             GhUri = ghUri;
         }
 
@@ -68,6 +70,7 @@ namespace WtPUpdater
 
         }
 
+
         internal void Download(string version)
         {
             var dir = Path.GetTempPath();
@@ -77,6 +80,8 @@ namespace WtPUpdater
             WebClient.DownloadProgressChanged += (o, ea) => TriggerDownloadProgressChanged(o, ea);
             WebClient.DownloadFileCompleted += (o, ea) => TriggerDownloadFileCompleted(o, ea);
             WebClient.DownloadFileAsync(uri, fileName);
+            if (!string.IsNullOrEmpty(WtpZipFile) && File.Exists(WtpZipFile)) File.Delete(WtpZipFile);
+            WtpZipFile = fileName;
         }
 
         internal string FindCiv4ColDir()
@@ -85,8 +90,8 @@ namespace WtPUpdater
             foreach (var subkeyname in uninst.GetSubKeyNames())
             {
                 var subkey = uninst.OpenSubKey(subkeyname);
-                if (subkey?.GetValue("DisplayName")?.ToString() != "Sid Meier's Civilization IV: Colonization1") continue;
-                return  subkey.GetValue("InstallLocation").ToString();
+                if (subkey?.GetValue("DisplayName")?.ToString() != "Sid Meier's Civilization IV: Colonization") continue;
+                return subkey.GetValue("InstallLocation").ToString();
             }
             return "";
         }
@@ -99,7 +104,49 @@ namespace WtPUpdater
 
         internal void CancelDownload()
         {
-            if (WebClient.IsBusy) WebClient.CancelAsync();
+            if (WebClient.IsBusy)
+            {
+                WebClient.CancelAsync();
+                AddLog("Download cancelled");
+            }
+            if (!string.IsNullOrEmpty(WtpZipFile)&&File.Exists(WtpZipFile)) { 
+                File.Delete(WtpZipFile);
+                AddLog($"Deleted incompleted {WtpZipFile}");
+                WtpZipFile = ""; 
+            } 
+        }
+
+        internal bool Unzip(string installPath)
+        {
+            try
+            {
+                var path = Path.Combine(installPath, "WeThePeople");
+                AddLog($"Target directory {path}");
+                if (Directory.Exists(path))
+                {
+                    AddLog("Directory exists, removing");
+                    Directory.Delete(path, true);
+                }
+                Directory.CreateDirectory(path);
+                AddLog("Unzipping");
+                ZipFile.ExtractToDirectory(WtpZipFile, path);
+                AddLog("Completed");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                AddLog($"Error in unzip: {ex}");
+                return false;
+            }
+        }
+
+        internal void RemoveFile()
+        {
+            if (File.Exists(WtpZipFile)) { 
+                AddLog($"Removing {WtpZipFile}"); 
+                File.Delete(WtpZipFile); 
+                AddLog("Completed!"); 
+            }
         }
 
     }

@@ -34,6 +34,7 @@
             this.SaveButton = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.FindCivButton = new System.Windows.Forms.Button();
+            this.UnzipButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // RefreshButton
@@ -76,9 +77,9 @@
             // 
             // progressBar
             // 
-            this.progressBar.Location = new System.Drawing.Point(256, 13);
+            this.progressBar.Location = new System.Drawing.Point(337, 13);
             this.progressBar.Name = "progressBar";
-            this.progressBar.Size = new System.Drawing.Size(543, 23);
+            this.progressBar.Size = new System.Drawing.Size(462, 23);
             this.progressBar.TabIndex = 4;
             // 
             // FindCivButton
@@ -91,11 +92,23 @@
             this.FindCivButton.UseVisualStyleBackColor = true;
             this.FindCivButton.Click += new System.EventHandler(this.FindCivButton_Click);
             // 
+            // UnzipButton
+            // 
+            this.UnzipButton.Enabled = false;
+            this.UnzipButton.Location = new System.Drawing.Point(256, 14);
+            this.UnzipButton.Name = "UnzipButton";
+            this.UnzipButton.Size = new System.Drawing.Size(75, 23);
+            this.UnzipButton.TabIndex = 6;
+            this.UnzipButton.Text = "Unzip";
+            this.UnzipButton.UseVisualStyleBackColor = true;
+            this.UnzipButton.Click += new System.EventHandler(this.UnzipButton_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(811, 450);
+            this.Controls.Add(this.UnzipButton);
             this.Controls.Add(this.FindCivButton);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.SaveButton);
@@ -117,6 +130,7 @@
         private System.Windows.Forms.Button SaveButton;
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Button FindCivButton;
+        private System.Windows.Forms.Button UnzipButton;
     }
 }
 

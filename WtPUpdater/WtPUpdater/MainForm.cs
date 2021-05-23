@@ -23,6 +23,10 @@ namespace WtPUpdater
             InitializeComponent();
            
             wtpContainer = new WtpContainer(AddLog, GH_URI);
+            wtpContainer.DownloadFileCompleted += (o, arg) =>
+            {
+                UnzipButton.Enabled = !string.IsNullOrEmpty(wtpContainer.WtpZipFile) && !string.IsNullOrEmpty(installDir) && File.Exists(wtpContainer.WtpZipFile);
+            };
         }
 
         private const string GH_URI = "https://github.com/We-the-People-civ4col-mod/Mod/releases";
@@ -92,7 +96,7 @@ namespace WtPUpdater
                 else
                 {
                     var mgp = wtpContainer.FindCiv4ColMyGamesDir();
-                        if (!string.IsNullOrEmpty(mgp)&&MessageBox.Show($"Do you want to use {mgp}?") == DialogResult.OK) installDir = mgp;
+                        if (!string.IsNullOrEmpty(mgp)&&MessageBox.Show($"Do you want to use {mgp}?", "Success", MessageBoxButtons.YesNo) == DialogResult.Yes) installDir = mgp;
                     
                 }
             }
@@ -100,8 +104,14 @@ namespace WtPUpdater
             {
                 installDir = Path.Combine(installDir, "Mods");
                 AddLog($"Installation dir: {installDir}");
+              
             } 
               
+        }
+
+        private void UnzipButton_Click(object sender, EventArgs e)
+        {
+          if (  wtpContainer.Unzip(installDir)&&MessageBox.Show("Remove downloaded file?","Success",MessageBoxButtons.YesNo)==DialogResult.Yes) wtpContainer.RemoveFile();
         }
     }
 }
