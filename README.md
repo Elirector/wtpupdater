@@ -15,8 +15,13 @@ Parse mod release page on github, find all releases, download chosen one, unpack
 
 # Roadmap / todo or something
 
-1. Remove temp files
 1. Some configuration
-1. Error handling and optimization
-1. Need a way to distinguish current version
+1. Need a way to distinguish current mod version
 1. Remake as wizard with auto/silent option
+
+# Release history
+## 0.0.1.0 
+- First proper version number
+- Temp file is now located in user's temp dir
+- Temp files now should be removed on util close (even after errors)
+- Added more logging and some basic error handling

@@ -6,65 +6,65 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace WtPUpdater
 {
     class WtpContainer
     {
-        private WebClient WebClient;
-        private Action<string> AddLog = null;
-        private Dictionary<string, string> VersionUris;
-        private readonly string GhUri;
+        private readonly WebClient _webClient;
+        private readonly Action<string> _addLog;
+        private Dictionary<string, string> _versionUris;
+        private readonly string _ghUri;
+        private readonly List<string> _tempFiles = new List<string>();
+
         internal DownloadProgressChangedEventHandler DownloadProgressChanged;
         internal AsyncCompletedEventHandler DownloadFileCompleted;
         internal string WtpZipFile { get; private set; }
+        internal bool DownloadInProgress => _webClient?.IsBusy ?? true;
 
-        internal bool DownloadInProgress { get { return WebClient == null ? true : WebClient.IsBusy; } }
-        private void TriggerDownloadProgressChanged(object o, DownloadProgressChangedEventArgs args)
-        {
-            if (DownloadProgressChanged != null) DownloadProgressChanged(o, args);
-        }
 
-        private void TriggerDownloadFileCompleted(object o, AsyncCompletedEventArgs args)
-        {
-            if (DownloadFileCompleted != null) DownloadFileCompleted(o, args);
-        }
-        public WtpContainer(Action<string> addLog = null, string ghUri = @"https://github.com/We-the-People-civ4col-mod/Mod/releases")
+        public WtpContainer(string ghUri, Action<string> addLog = null)
         {
             ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072;
-            AddLog = addLog ?? ((s) => { });
-            WebClient = new WebClient();
-            GhUri = ghUri;
+            _addLog = addLog ?? ((s) => { });
+            _webClient = new WebClient();
+            _ghUri = ghUri;
         }
 
         internal IEnumerable<string> GetVerList()
         {
             var versionList = new List<string>();
-            AddLog($"Getting release page from {GhUri}");
-            string result;
+            _addLog($"Getting release page from {_ghUri}");
 
-            using (var stream = WebClient.OpenRead(GhUri))
+            try
             {
-                using (var sr = new StreamReader(stream))
+                string result;
+                using (var stream = _webClient.OpenRead(_ghUri))
                 {
-                    result = sr.ReadToEnd();
+                    using (var sr = new StreamReader(stream ?? throw new InvalidOperationException("Can not connect to GitHub")))
+                    {
+                        result = sr.ReadToEnd();
+                    }
+                }
+                _addLog($"Got {result.Length} chars");
+                _versionUris = new Dictionary<string, string>();
+                var re = new Regex(@"^.*/releases/download/(?<suburl>.*?/WeThePeople-(?<version>\d*?[.]\d*?([.]\d*?([.]\d*?))?).zip).*$", RegexOptions.Multiline);
+                var matches = re.Matches(result);
+                foreach (Match match in matches)
+                {
+
+                    var version = match.Groups["version"].Value;
+                    versionList.Add(version);
+                    var verUri = $"{_ghUri}/download/{match.Groups["suburl"].Value}";
+                    _addLog($"Found version {version} at {verUri}");
+                    _versionUris.Add(version, verUri);
                 }
             }
-            AddLog($"Got {result.Length} chars");
-            VersionUris = new Dictionary<string, string>();
-            var re = new Regex(@"^.*/releases/download/(?<suburl>.*?/WeThePeople-(?<version>\d*?[.]\d*?([.]\d*?([.]\d*?))?).zip).*$", RegexOptions.Multiline);
-            var matches = re.Matches(result);
-            foreach (Match match in matches)
+            catch (Exception e)
             {
+                _addLog(e.ToString());
 
-                var version = match.Groups["version"].Value;
-                versionList.Add(version);
-                var verUri = $"{GhUri}/download/{match.Groups["suburl"].Value}";
-                AddLog($"Found version {version} at {verUri}");
-                VersionUris.Add(version, verUri);
             }
             return versionList;
 
@@ -73,26 +73,74 @@ namespace WtPUpdater
 
         internal void Download(string version)
         {
+            if (string.IsNullOrEmpty(version))
+            {
+                return; //no version selected, ignoring
+            }
             var dir = Path.GetTempPath();
-            var uri = new Uri(VersionUris[version]);
-            var fileName = Path.Combine(dir, uri.AbsolutePath);
-            fileName = fileName.Substring(fileName.LastIndexOf('/') + 1);
-            WebClient.DownloadProgressChanged += (o, ea) => TriggerDownloadProgressChanged(o, ea);
-            WebClient.DownloadFileCompleted += (o, ea) => TriggerDownloadFileCompleted(o, ea);
-            WebClient.DownloadFileAsync(uri, fileName);
-            if (!string.IsNullOrEmpty(WtpZipFile) && File.Exists(WtpZipFile)) File.Delete(WtpZipFile);
-            WtpZipFile = fileName;
+            Uri uri;
+            try
+            {
+                uri = new Uri(_versionUris[version]);
+            }
+            catch (KeyNotFoundException)
+            {
+                _addLog($"Uri for ver. {version} not found in collection");
+                return;
+            }
+            var fullName = Path.Combine(dir, Path.GetFileName(uri.AbsolutePath));
+            if (File.Exists(fullName))
+            {
+                _addLog($"File already exists: {fullName}, removing");
+                try
+                {
+                    File.Delete(fullName);
+                }
+                catch (Exception)
+                {
+                    _addLog("Can not remove file, cancelling");
+                    return;
+                }
+            }
+            _webClient.DownloadProgressChanged += (o, ea) => DownloadProgressChanged?.Invoke(o, ea);
+            _webClient.DownloadFileCompleted += (o, ea) => DownloadFileCompleted?.Invoke(o, ea);
+            _webClient.DownloadFileAsync(uri, fullName);
+            _tempFiles.Add(fullName);
+            try
+            {
+                if (!string.IsNullOrEmpty(WtpZipFile) && File.Exists(WtpZipFile)) File.Delete(WtpZipFile);
+            }
+            catch (Exception)
+            {
+                _tempFiles.Add(WtpZipFile);
+                _addLog("Can not delete old downloaded file, will try to remove it later");
+
+            }
+            WtpZipFile = fullName;
         }
 
         internal string FindCiv4ColDir()
         {
-            var uninst = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
-            foreach (var subkeyname in uninst.GetSubKeyNames())
+            try
             {
-                var subkey = uninst.OpenSubKey(subkeyname);
-                if (subkey?.GetValue("DisplayName")?.ToString() != "Sid Meier's Civilization IV: Colonization") continue;
-                return subkey.GetValue("InstallLocation").ToString();
+                var uninstall = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
+                if (uninstall==null)
+                {
+                    _addLog("Can not get registry key");
+                    return "";
+                }
+                foreach (var subKeyName in uninstall.GetSubKeyNames())
+                {
+                    var subKey = uninstall.OpenSubKey(subKeyName);
+                    if (subKey?.GetValue("DisplayName")?.ToString() != "Sid Meier's Civilization IV: Colonization") continue;
+                    return subKey.GetValue("InstallLocation").ToString();
+                }
             }
+            catch (Exception e)
+            {
+                _addLog($"Error searching for installation dir: {e}");
+            }
+
             return "";
         }
 
@@ -104,16 +152,30 @@ namespace WtPUpdater
 
         internal void CancelDownload()
         {
-            if (WebClient.IsBusy)
+            try
             {
-                WebClient.CancelAsync();
-                AddLog("Download cancelled");
+                if (_webClient.IsBusy)
+                {
+                    _webClient.CancelAsync();
+                    _addLog("Download cancelled");
+                }
             }
-            if (!string.IsNullOrEmpty(WtpZipFile)&&File.Exists(WtpZipFile)) { 
+            catch (Exception)
+            {
+                _addLog("Can not cancel file download");
+            }
+
+            try
+            {
+                if (string.IsNullOrEmpty(WtpZipFile) || !File.Exists(WtpZipFile)) return;
                 File.Delete(WtpZipFile);
-                AddLog($"Deleted incompleted {WtpZipFile}");
-                WtpZipFile = ""; 
-            } 
+                _addLog($"Deleted uncompleted {WtpZipFile}");
+                WtpZipFile = "";
+            }
+            catch (Exception e)
+            {
+                _addLog($"Can not delete uncompleted file: {e}");
+            }
         }
 
         internal bool Unzip(string installPath)
@@ -121,31 +183,54 @@ namespace WtPUpdater
             try
             {
                 var path = Path.Combine(installPath, "WeThePeople");
-                AddLog($"Target directory {path}");
+                _addLog($"Target directory {path}");
                 if (Directory.Exists(path))
                 {
-                    AddLog("Directory exists, removing");
+                    _addLog("Directory exists, removing");
                     Directory.Delete(path, true);
                 }
                 Directory.CreateDirectory(path);
-                AddLog("Unzipping");
+                _addLog("Unzipping");
                 ZipFile.ExtractToDirectory(WtpZipFile, path);
-                AddLog("Completed");
+                _addLog("Completed");
                 return true;
             }
             catch (Exception ex)
             {
-                AddLog($"Error in unzip: {ex}");
+                _addLog($"Error in unzip: {ex}");
                 return false;
             }
         }
 
         internal void RemoveFile()
         {
-            if (File.Exists(WtpZipFile)) { 
-                AddLog($"Removing {WtpZipFile}"); 
-                File.Delete(WtpZipFile); 
-                AddLog("Completed!"); 
+            if (!File.Exists(WtpZipFile)) return;
+            _addLog($"Removing {WtpZipFile}");
+            try
+            {
+                File.Delete(WtpZipFile);
+                _addLog("Completed!");
+            }
+            catch (Exception e)
+            {
+                _addLog($"Can not remove file after unzipping: {e}");
+            }
+        }
+
+        ~WtpContainer()
+        {
+            foreach (var file in _tempFiles.Where(File.Exists))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception)
+                {
+                    //Just ignore undeletable file, can do nothing now
+                }
+
+
             }
         }
 
