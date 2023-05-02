@@ -20,6 +20,11 @@ Parse mod release page on github, find all releases, download chosen one, unpack
 1. Remake as wizard with auto/silent option
 
 # Release history
+## 0.0.2.0
+ - Remade download for the new github releases page
+ - Runs setup.bat if it exists
+ - Blacklisted unsupported and/or buggy versions (4.0 and 4.0.1 for now)
+
 ## 0.0.1.0 
 - First proper version number
 - Temp file is now located in user's temp dir
