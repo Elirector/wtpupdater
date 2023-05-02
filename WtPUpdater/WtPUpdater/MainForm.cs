@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -37,7 +38,7 @@ namespace WtPUpdater
 
             VersionList.Items.Clear();
             VersionList.Items.AddRange(_wtpContainer.GetVerList().Cast<object>().ToArray());
-            VersionList.SelectedIndex = 0;
+            if (VersionList.Items.Count>0) VersionList.SelectedIndex = 0; 
         }
 
         private void VersionList_SelectedIndexChanged(object sender, EventArgs e)
@@ -104,6 +105,15 @@ namespace WtPUpdater
         private void UnzipButton_Click(object sender, EventArgs e)
         {
             if (_wtpContainer.Unzip(_installDir) && MessageBox.Show("Remove downloaded file?", "Success", MessageBoxButtons.YesNo) == DialogResult.Yes) _wtpContainer.RemoveFile();
+            var postInstall = Path.Combine(_installDir, "setup.bat");
+            if (File.Exists(postInstall))
+            {
+                AddLog("Post install setup file found, executing...");
+                var psi = new ProcessStartInfo(postInstall);
+                psi.WorkingDirectory = _installDir;
+                psi.CreateNoWindow = true;
+                Process.Start(psi);
+            }
         }
     }
 }

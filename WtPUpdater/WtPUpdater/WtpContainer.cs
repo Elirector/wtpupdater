@@ -32,6 +32,8 @@ namespace WtPUpdater
             _ghUri = ghUri;
         }
 
+        private readonly string[] Blacklist = new[] {"4.0", "4.0.1"};
+
         internal IEnumerable<string> GetVerList()
         {
             var versionList = new List<string>();
@@ -49,16 +51,31 @@ namespace WtPUpdater
                 }
                 _addLog($"Got {result.Length} chars");
                 _versionUris = new Dictionary<string, string>();
-                var re = new Regex(@"^.*/releases/download/(?<suburl>.*?/WeThePeople-(?<version>\d*?[.]\d*?([.]\d*?([.]\d*?))?).zip).*$", RegexOptions.Multiline);
-                var matches = re.Matches(result);
-                foreach (Match match in matches)
+                var reAsset = new Regex("https://github.com/We-the-People-civ4col-mod/Mod/releases/expanded_assets/.*(?=\")");
+                var assets = reAsset.Matches(result);
+                _addLog($"Found {assets.Count} version assets");
+                var re = new Regex(@"^.*/releases/download/(?<suburl>.*?/WeThePeople-(?<version>\d*?[.]\d*?([.]\d*?([.]\d*?)?)?).zip).*$", RegexOptions.Multiline);
+                foreach (var asset in assets)
                 {
+                    using (var stream = _webClient.OpenRead(asset.ToString()))
+                    {
+                        using (var sr = new StreamReader(stream ?? throw new InvalidOperationException("Can not connect to GitHub")))
+                        {
+                            result = sr.ReadToEnd();
+                        }
+                    }
+                    var matches = re.Matches(result);//https://github.com/We-the-People-civ4col-mod/Mod/releases/download/3.0.1/WeThePeople-3.0.1.zip
 
-                    var version = match.Groups["version"].Value;
-                    versionList.Add(version);
-                    var verUri = $"{_ghUri}/download/{match.Groups["suburl"].Value}";
-                    _addLog($"Found version {version} at {verUri}");
-                    _versionUris.Add(version, verUri);
+                    foreach (Match match in matches)
+                    {
+
+                        var version = match.Groups["version"].Value;
+                        if (Blacklist.Contains(version)) continue;
+                        versionList.Add(version);
+                        var verUri = $"{_ghUri}/download/{match.Groups["suburl"].Value}";
+                        _addLog($"Found version {version} at {verUri}");
+                        _versionUris.Add(version, verUri);
+                    }
                 }
             }
             catch (Exception e)
@@ -182,7 +199,7 @@ namespace WtPUpdater
         {
             try
             {
-                var path = Path.Combine(installPath, "WeThePeople");
+                var path = installPath;
                 _addLog($"Target directory {path}");
                 if (Directory.Exists(path))
                 {
